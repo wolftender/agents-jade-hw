@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<simulation>
+    <restaurants>
+        <restaurant name="papa john" reliability="3" maxPeople="5">
+            <dishes>
+                <dish id="201" price="120.0" />
+                <dish id="300" price="120.0" />
+                <dish id="301" price="120.0" />
+                <dish id="302" price="120.0" />
+                <dish id="304" price="120.0" />
+                <dish id="400" price="120.0" />
+                <dish id="401" price="120.0" />
+                <dish id="402" price="120.0" />
+            </dishes>
+        </restaurant>
+        <restaurant name="bar mleczny polna" reliability="2" maxPeople="2">
+            <dishes>
+                <dish id="100" price="120.0" />
+                <dish id="101" price="120.0" />
+                <dish id="102" price="120.0" />
+                <dish id="103" price="120.0" />
+                <dish id="104" price="120.0" />
+                <dish id="105" price="120.0" />
+                <dish id="106" price="120.0" />
+                <dish id="201" price="120.0" />
+                <dish id="202" price="120.0" />
+                <dish id="401" price="120.0" />
+                <dish id="402" price="120.0" />
+            </dishes>
+        </restaurant>
+        <restaurant name="el mundo de jamon" reliability="4" maxPeople="3">
+            <dishes>
+                <dish id="200" price="120.0" />
+                <dish id="201" price="120.0" />
+                <dish id="202" price="120.0" />
+                <dish id="203" price="120.0" />
+                <dish id="204" price="120.0" />
+                <dish id="205" price="120.0" />
+                <dish id="100" price="120.0" />
+                <dish id="300" price="120.0" />
+                <dish id="400" price="120.0" />
+                <dish id="401" price="120.0" />
+                <dish id="402" price="120.0" />
+            </dishes>
+        </restaurant>
+    </restaurants>
+    <customers>
+        <customer name="hodrick swiety rycerz">
+            <orders>
+                <order dishId="100" forPeople="2" />
+                <order dishId="200" forPeople="3" />
+                <order dishId="300" forPeople="1" />
+                <order dishId="101" forPeople="5" />
+                <order dishId="105" forPeople="4" />
+                <order dishId="401" forPeople="4" />
+                <order dishId="402" forPeople="3" />
+                <order dishId="402" forPeople="1" />
+            </orders>
+        </customer>
+        <customer name="koniczyn">
+            <orders>
+                <order dishId="100" forPeople="4" />
+                <order dishId="200" forPeople="44" />
+                <order dishId="300" forPeople="1" />
+                <order dishId="101" forPeople="1" />
+                <order dishId="105" forPeople="2" />
+                <order dishId="401" forPeople="4" />
+                <order dishId="402" forPeople="3" />
+                <order dishId="402" forPeople="1" />
+            </orders>
+        </customer>
+    </customers>
+</simulation>
