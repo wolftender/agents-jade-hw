@@ -57,5 +57,17 @@
                 <order dishId="402" forPeople="1" />
             </orders>
         </customer>
+        <customer name="koniczyn">
+            <orders>
+                <order dishId="100" forPeople="4" />
+                <order dishId="200" forPeople="44" />
+                <order dishId="300" forPeople="1" />
+                <order dishId="101" forPeople="1" />
+                <order dishId="105" forPeople="2" />
+                <order dishId="401" forPeople="4" />
+                <order dishId="402" forPeople="3" />
+                <order dishId="402" forPeople="1" />
+            </orders>
+        </customer>
     </customers>
 </simulation>

@@ -109,12 +109,19 @@ public class SimulationAgent extends Agent {
                         RestaurantService.getInstance ().registerRestaurant (restaurantId, restaurant);
 
                         try {
-                            AgentController controller = getContainerController ().createNewAgent (
-                                    generateAgentName (restaurant.getName ()),
-                                    "agents.GatewayAgent", new String [] { restaurantId }
+                            String gatewayName = generateAgentName (restaurant.getName ());
+                            String managerName = gatewayName + "_mgr";
+
+                            AgentController managerController = getContainerController ().createNewAgent (
+                                    managerName, "agents.ManagerAgent", new String [] { restaurantId }
                             );
 
-                            controller.start ();
+                            AgentController gatewayController = getContainerController ().createNewAgent (
+                                    gatewayName, "agents.GatewayAgent", new String [] { restaurantId, managerName }
+                            );
+
+                            managerController.start ();
+                            gatewayController.start ();
                         } catch (StaleProxyException exception) {
                             System.err.printf ("failed to create representative for %s restaurant\n", restaurant.getName ());
                             exception.printStackTrace ();

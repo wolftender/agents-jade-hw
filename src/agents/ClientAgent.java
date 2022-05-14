@@ -41,20 +41,19 @@ public class ClientAgent extends Agent {
                 case 0 -> {
                     ACLMessage message = new ACLMessage (ACLMessage.CFP);
                     for (AID seller : sellers) {
-                        System.out.printf ("%s ordering %d (x%d) from %s\n", getAgent ().getName (), order.dish (), order.amount (), seller);
+                        System.out.printf ("%s ordering %d (x%d) from %s\n", getAgent ().getName (), order.dish (), order.amount (), seller.getName ());
                         message.addReceiver (seller);
                     }
 
                     String replyWith = "cfp-" + System.currentTimeMillis ();
 
                     message.setContent (order.serialize ());
-                    message.setConversationId ("food-order");
+                    message.setConversationId ("food_order");
                     message.setReplyWith (replyWith); // set unique identifier for this conversation
 
+                    template = MessageTemplate.and (MessageTemplate.MatchConversationId ("food_order"), MessageTemplate.MatchInReplyTo (replyWith));
+
                     getAgent ().send (message);
-
-                    template = MessageTemplate.and (MessageTemplate.MatchConversationId ("food-order"), MessageTemplate.MatchInReplyTo (replyWith));
-
                     lastReplyTimestamp = System.currentTimeMillis ();
                     step = 1;
                 }
@@ -65,18 +64,20 @@ public class ClientAgent extends Agent {
 
                     if (message != null) {
                         lastReplyTimestamp = now;
+                        String senderName = message.getSender ().getName ();
 
                         if (message.getPerformative () == ACLMessage.PROPOSE) {
-                            System.out.printf ("%s received propose from %s\n", getAgent ().getName (), message.getSender ());
+                            System.out.printf ("%s received propose from %s\n", getAgent ().getName (), senderName);
                         } else if (message.getPerformative () == ACLMessage.REFUSE) {
-                            System.out.printf ("%s received refuse from %s\n", getAgent ().getName (), message.getSender ());
+                            System.out.printf ("%s received refuse from %s\n", getAgent ().getName (), senderName);
                         } else if (message.getPerformative () == ACLMessage.NOT_UNDERSTOOD) {
-                            System.out.printf ("%s received not understood from %s\n", getAgent ().getName (), message.getSender ());
+                            System.out.printf ("%s received not understood from %s\n", getAgent ().getName (), senderName);
                         } else {
+                            System.out.printf ("client %s did not understand response %s\n", getAgent ().getName (), message.getContent ());
                             ACLMessage reply = message.createReply ();
 
                             reply.setPerformative (ACLMessage.NOT_UNDERSTOOD);
-                            reply.setContent ("invalid-performative");
+                            reply.setContent ("invalid_performative");
 
                             getAgent ().send (reply);
                         }
