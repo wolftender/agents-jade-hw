@@ -90,7 +90,7 @@ public class GatewayAgent extends Agent {
             AID clientId = activeConversations.get (cfpId);
 
             if (clientId != null) {
-                ACLMessage reply = new ACLMessage (message.getPerformative ());
+                ACLMessage reply = new ACLMessage (message.getPerformative () == ACLMessage.AGREE ? ACLMessage.PROPOSE : ACLMessage.REFUSE);
 
                 if (message.getPerformative () == ACLMessage.AGREE) {
                     System.out.printf ("restaurant %s chef accepted order %s, sending feedback to %s\n", getAgent ().getName (), cfpId, clientId.getName ());
@@ -110,6 +110,30 @@ public class GatewayAgent extends Agent {
             }
         }
 
+        private void handleBuy (ACLMessage message) {
+            GatewayAgent gatewayAgent = (GatewayAgent) getAgent ();
+            ACLMessage reply = message.createReply ();
+
+            if (!gatewayAgent.ready) {
+                reply.setPerformative (ACLMessage.REFUSE);
+                reply.setContent ("unavailable");
+
+                getAgent ().send (reply);
+            } else {
+                String conversationId = message.getReplyWith ();
+                activeConversations.put (conversationId, message.getSender ());
+
+                ACLMessage query = new ACLMessage (ACLMessage.PROPOSE);
+                query.setReplyWith (conversationId);
+                query.setContent (message.getContent ());
+                query.setConversationId ("food_buy");
+                query.addReceiver (gatewayAgent.managerName);
+
+                System.out.printf ("%s passing order purchase %s\n", getAgent ().getName (), query.getContent ());
+                getAgent ().send (query);
+            }
+        }
+
         @Override
         public void action () {
             ACLMessage message = getAgent ().receive ();
@@ -123,6 +147,8 @@ public class GatewayAgent extends Agent {
                     }
                 } else if (message.getConversationId ().equals ("food_query")) {
                     handleFoodQueryResponse (message);
+                } else if (message.getConversationId ().equals ("food_buy")) {
+                    handleBuy (message);
                 }
             } else {
                 block ();

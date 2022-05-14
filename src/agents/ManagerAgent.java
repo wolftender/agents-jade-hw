@@ -82,22 +82,38 @@ public class ManagerAgent extends Agent {
                 send (reply);
             }
 
+            private void handleBuy (ACLMessage message) {
+                if (message.getSender ().equals (gatewayId)) {
+                    String orderId = message.getReplyWith ();
+
+                    if (acceptedOrders.contains (orderId)) {
+                        acceptedOrders.remove (orderId);
+                        System.out.printf ("[ORDER ACCEPTED!] order %s will be delivered by %s!\n", orderId, getName ());
+                    } else {
+                        System.err.printf ("there was no prior agreement with %s to deliver %s\n", getName (), orderId);
+                    }
+                } else {
+                    System.err.printf ("sender %s is not valid, please proceed through gateway\n", message.getSender ().getName ());
+                }
+            }
+
             @Override
             public void action () {
                 ACLMessage message = receive ();
 
                 if (message != null) {
                     if (message.getPerformative () == ACLMessage.PROPOSE) {
-                        if (message.getConversationId ().equals ("handshake")) {
-                            try {
-                                Thread.sleep (1000);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace ();
+                        switch (message.getConversationId ()) {
+                            case "handshake" -> {
+                                try {
+                                    Thread.sleep (1000);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace ();
+                                }
+                                handleHandshake (message);
                             }
-
-                            handleHandshake (message);
-                        } else if (message.getConversationId ().equals ("food_query")) {
-                            handleOrderCfp (message);
+                            case "food_query" -> handleOrderCfp (message);
+                            case "food_buy" -> handleBuy (message);
                         }
                     }
                 } else {

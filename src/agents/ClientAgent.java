@@ -17,13 +17,17 @@ import services.CustomerService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class ClientAgent extends Agent {
     private static class RequestBehaviour extends Behaviour {
         private final AID [] sellers;
+        private final List<AID> offers;
+
         private final Customer.Order order;
 
         private MessageTemplate template;
+        private String replyWith;
 
         private long lastReplyTimestamp = 0;
         private int step = 0;
@@ -33,10 +37,13 @@ public class ClientAgent extends Agent {
 
             this.order = order;
             this.sellers = sellers;
+
+            offers = new ArrayList<> ();
         }
 
         @Override
         public void action () {
+            ClientAgent clientAgent = (ClientAgent) getAgent ();
             switch (step) {
                 case 0 -> {
                     ACLMessage message = new ACLMessage (ACLMessage.CFP);
@@ -45,7 +52,7 @@ public class ClientAgent extends Agent {
                         message.addReceiver (seller);
                     }
 
-                    String replyWith = "cfp-" + System.currentTimeMillis ();
+                    replyWith = String.format ("cfp-%s-%d", clientAgent.customerId, System.currentTimeMillis ());
 
                     message.setContent (order.serialize ());
                     message.setConversationId ("food_order");
@@ -68,6 +75,7 @@ public class ClientAgent extends Agent {
 
                         if (message.getPerformative () == ACLMessage.PROPOSE) {
                             System.out.printf ("%s received propose from %s\n", getAgent ().getName (), senderName);
+                            offers.add (message.getSender ());
                         } else if (message.getPerformative () == ACLMessage.REFUSE) {
                             System.out.printf ("%s received refuse from %s\n", getAgent ().getName (), senderName);
                         } else if (message.getPerformative () == ACLMessage.NOT_UNDERSTOOD) {
@@ -90,22 +98,51 @@ public class ClientAgent extends Agent {
                         }
                     }
                 }
+
+                case 2 -> {
+                    if (offers.size () > 0) {
+                        System.out.printf ("%s listing my potential sellers:\n", getAgent ().getName ());
+
+                        for (AID seller : offers) {
+                            System.out.printf (" - %s\n", seller.getName ());
+                        }
+
+                        int selectedSeller = clientAgent.random.nextInt (offers.size ());
+                        AID seller = offers.get (selectedSeller);
+
+                        System.out.printf ("selected seller %s, sending order %s\n", seller.getName (), replyWith);
+
+                        ACLMessage message = new ACLMessage (ACLMessage.REQUEST);
+
+                        message.addReceiver (seller);
+                        message.setConversationId ("food_buy");
+                        message.setReplyWith (replyWith);
+                        message.setContent (order.serialize ());
+
+                        getAgent ().send (message);
+                    }
+
+                    step = 3;
+                }
             }
         }
 
         @Override
         public boolean done () {
-            return (step >= 2);
+            return (step >= 3);
         }
     };
 
     private Customer customer = null;
+    private Random random;
+    private String customerId;
 
     @Override
     protected void setup () {
         Object [] args = getArguments ();
-        String customerId = (String) args [0];
+        customerId = (String) args [0];
 
+        random = new Random ();
         customer = CustomerService.getInstance ().getCustomer (customerId);
 
         // every 4s customer makes their next pre programmed order
