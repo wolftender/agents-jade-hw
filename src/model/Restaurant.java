@@ -3,6 +3,30 @@ package model;
 import java.util.*;
 
 public class Restaurant {
+    public static record Offer (int dish, int amount, float price) {
+        public String serialize () {
+            return String.format ("offer:%d:%d:%f", dish, amount, price);
+        }
+
+        public static Offer deserialize (String str) {
+            String [] parts = str.split (":");
+
+            if (parts.length != 4) {
+                return null;
+            }
+
+            if (!parts [0].equals ("offer")) {
+                return null;
+            }
+
+            int dish = Integer.parseInt (parts [1]);
+            int amount = Integer.parseInt (parts [2]);
+            float price = Float.parseFloat (parts [3]);
+
+            return new Offer (dish, amount, price);
+        }
+    }
+
     private final Map<Integer, Float> dishesServed;
     private final List<Integer> cuisinesAdvertised;
 

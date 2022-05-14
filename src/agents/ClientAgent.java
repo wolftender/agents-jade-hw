@@ -24,6 +24,8 @@ public class ClientAgent extends Agent {
         private final Customer.Order order;
 
         private MessageTemplate template;
+
+        private long lastReplyTimestamp = 0;
         private int step = 0;
 
         public RequestBehaviour (Agent agent, Customer.Order order, AID [] sellers) {
@@ -39,6 +41,7 @@ public class ClientAgent extends Agent {
                 case 0 -> {
                     ACLMessage message = new ACLMessage (ACLMessage.CFP);
                     for (AID seller : sellers) {
+                        System.out.printf ("%s ordering %d (x%d) from %s\n", getAgent ().getName (), order.dish (), order.amount (), seller);
                         message.addReceiver (seller);
                     }
 
@@ -51,18 +54,47 @@ public class ClientAgent extends Agent {
                     getAgent ().send (message);
 
                     template = MessageTemplate.and (MessageTemplate.MatchConversationId ("food-order"), MessageTemplate.MatchInReplyTo (replyWith));
+
+                    lastReplyTimestamp = System.currentTimeMillis ();
                     step = 1;
                 }
 
-                default -> {
-                    step = 0;
+                case 1 -> {
+                    ACLMessage message = getAgent ().receive (template);
+                    long now = System.currentTimeMillis ();
+
+                    if (message != null) {
+                        lastReplyTimestamp = now;
+
+                        if (message.getPerformative () == ACLMessage.PROPOSE) {
+                            System.out.printf ("%s received propose from %s\n", getAgent ().getName (), message.getSender ());
+                        } else if (message.getPerformative () == ACLMessage.REFUSE) {
+                            System.out.printf ("%s received refuse from %s\n", getAgent ().getName (), message.getSender ());
+                        } else if (message.getPerformative () == ACLMessage.NOT_UNDERSTOOD) {
+                            System.out.printf ("%s received not understood from %s\n", getAgent ().getName (), message.getSender ());
+                        } else {
+                            ACLMessage reply = message.createReply ();
+
+                            reply.setPerformative (ACLMessage.NOT_UNDERSTOOD);
+                            reply.setContent ("invalid-performative");
+
+                            getAgent ().send (reply);
+                        }
+                    } else {
+                        // timeout
+                        if (now - lastReplyTimestamp >= 3000) {
+                            step = 2;
+                        } else {
+                            block (3500);
+                        }
+                    }
                 }
             }
         }
 
         @Override
         public boolean done () {
-            return false;
+            return (step >= 2);
         }
     };
 
@@ -96,15 +128,13 @@ public class ClientAgent extends Agent {
 
                     try {
                         DFAgentDescription [] result = DFService.search (getAgent (), template);
-                        ACLMessage cfp = new ACLMessage (ACLMessage.CFP);
+                        AID [] names = new AID [result.length];
 
-                        for (DFAgentDescription dfAgentDescription : result) {
-                            System.out.printf ("%s will try to order %d from %s\n", getName (), order.dish (), dfAgentDescription.getName ());
-                            cfp.addReceiver (dfAgentDescription.getName ());
+                        for (int i = 0; i < result.length; ++i) {
+                            names [i] = result [i].getName ();
                         }
 
-                        cfp.setContent ("order:" + order.dish () + ":" + order.amount ());
-                        send (cfp);
+                        addBehaviour (new RequestBehaviour (this.getAgent (), order, names));
                     } catch (FIPAException exception) {
                         System.err.printf ("failed to order %d\n", order.dish ());
                         exception.printStackTrace ();

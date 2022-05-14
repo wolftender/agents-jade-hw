@@ -8,6 +8,7 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import model.Customer;
 import model.Restaurant;
 import services.RestaurantService;
 
@@ -16,6 +17,46 @@ import services.RestaurantService;
  */
 
 public class GatewayAgent extends Agent {
+    private static class MessageHandlerBehaviour extends CyclicBehaviour {
+        public MessageHandlerBehaviour (Agent agent) {
+            super (agent);
+        }
+
+        private void handleCallForProposal (ACLMessage message) {
+            String content = message.getContent ();
+            Customer.Order order = Customer.Order.deserialize (content);
+            ACLMessage reply = message.createReply ();
+
+            System.out.printf ("%s from %s with reply %s\n", getAgent ().getName (), message.getSender (), reply.getInReplyTo ());
+
+            if (order == null) {
+                reply.setPerformative (ACLMessage.NOT_UNDERSTOOD);
+                reply.setContent ("invalid_format");
+            } else {
+                // handle the message, send the message to our own restaurant manager
+                // to check if we can handle order, otherwise say no
+
+                reply.setPerformative (ACLMessage.REFUSE);
+                reply.setContent ("unavailable");
+            }
+
+            getAgent ().send (reply);
+        }
+
+        @Override
+        public void action () {
+            ACLMessage message = getAgent ().receive ();
+
+            if (message != null) {
+                if (message.getPerformative () == ACLMessage.CFP) {
+                    handleCallForProposal (message);
+                }
+            } else {
+                block ();
+            }
+        }
+    }
+
     @Override
     protected void setup () {
         Object [] args = getArguments ();
@@ -43,14 +84,7 @@ public class GatewayAgent extends Agent {
             fipaException.printStackTrace ();
         }
 
-        Behaviour messageHandlerBehaviour = new CyclicBehaviour () {
-            @Override
-            public void action () {
-                ACLMessage message = receive ();
-            }
-        };
-
-        addBehaviour (messageHandlerBehaviour);
+        addBehaviour (new MessageHandlerBehaviour (this));
         super.setup ();
     }
 
